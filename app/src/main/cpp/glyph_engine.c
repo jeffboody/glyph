@@ -31,6 +31,30 @@
 #include "glyph_engine.h"
 
 /***********************************************************
+* private                                                  *
+***********************************************************/
+
+static vkk_vgPolygon_t*
+glyph_engine_defaultGlyph(glyph_engine_t* self)
+{
+	ASSERT(self);
+
+	vkk_vgPolygonBuilder_t* pb = self->vg_polygon_builder;
+
+	vkk_vgPolygonBuilder_reset(pb);
+	if(vkk_vgPolygonBuilder_point(pb, 1, 2.5f, 2.5f) &&
+	   vkk_vgPolygonBuilder_point(pb, 0, 2.5f, 7.5f) &&
+	   vkk_vgPolygonBuilder_point(pb, 0, 7.5f, 7.5f) &&
+	   vkk_vgPolygonBuilder_point(pb, 0, 7.5f, 2.5f) &&
+	   vkk_vgPolygonBuilder_point(pb, 0, 2.5f, 2.5f))
+	{
+		return vkk_vgPolygonBuilder_build(pb);
+	}
+
+	return NULL;
+}
+
+/***********************************************************
 * public                                                   *
 ***********************************************************/
 
@@ -47,9 +71,40 @@ glyph_engine_t* glyph_engine_new(vkk_engine_t* engine)
 		return NULL;
 	}
 
+	vkk_renderer_t* rend;
+	rend = vkk_engine_defaultRenderer(engine);
+
+	self->vg_context = vkk_vgContext_new(rend);
+	if(self->vg_context == NULL)
+	{
+		goto fail_vg_context;
+	}
+
+	self->vg_polygon_builder = vkk_vgPolygonBuilder_new(engine);
+	if(self->vg_polygon_builder == NULL)
+	{
+		goto fail_vg_polygon_builder;
+	}
+
+	self->default_glyph = glyph_engine_defaultGlyph(self);
+	if(self->default_glyph == NULL)
+	{
+		goto fail_default_glyph;
+	}
+
 	self->engine = engine;
 
+	// success
 	return self;
+
+	// failure
+	fail_default_glyph:
+		vkk_vgPolygonBuilder_delete(&self->vg_polygon_builder);
+	fail_vg_polygon_builder:
+		vkk_vgContext_delete(&self->vg_context);
+	fail_vg_context:
+		FREE(self);
+	return NULL;
 }
 
 void glyph_engine_delete(glyph_engine_t** _self)
@@ -59,6 +114,9 @@ void glyph_engine_delete(glyph_engine_t** _self)
 	glyph_engine_t* self = *_self;
 	if(self)
 	{
+		vkk_vgPolygon_delete(&self->default_glyph);
+		vkk_vgPolygonBuilder_delete(&self->vg_polygon_builder);
+		vkk_vgContext_delete(&self->vg_context);
 		FREE(self);
 		*_self = NULL;
 	}
@@ -78,7 +136,7 @@ void glyph_engine_draw(glyph_engine_t* self)
 
 	float clear_color[4] =
 	{
-		1.0f, 0.0f, 1.0f, 1.0f
+		0.0f, 0.0f, 0.0f, 1.0f
 	};
 	if(vkk_renderer_beginDefault(rend,
 	                             VKK_RENDERER_MODE_DRAW,
@@ -117,6 +175,30 @@ void glyph_engine_draw(glyph_engine_t* self)
 		                     self->content_rect_width,
 		                     self->content_rect_height);
 	}
+
+	float l = 0.0f;
+	float r = 10.0f;
+	float b = 10.0f;
+	float t = 0.0f;
+	cc_mat4f_t mvp;
+	cc_mat4f_orthoVK(&mvp, 1, l, r,
+	                 b, t, 0.0f, 2.0f);
+
+	vkk_vgContext_reset(self->vg_context, &mvp);
+	vkk_vgContext_bindPolygons(self->vg_context);
+
+	vkk_vgPolygonStyle_t vg_polygon_style =
+	{
+		.color =
+		{
+			.r = 1.0f,
+			.g = 0.0f,
+			.b = 1.0f,
+			.a = 1.0f,
+		}
+	};
+	vkk_vgPolygon_draw(self->default_glyph, self->vg_context,
+	                   &vg_polygon_style);
 
 	vkk_renderer_end(rend);
 }

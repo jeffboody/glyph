@@ -25,6 +25,7 @@
 #define glyph_engine_H
 
 #include "libvkk/vkk.h"
+#include "libvkk/vkk_vg.h"
 
 /***********************************************************
 * public                                                   *
@@ -32,10 +33,13 @@
 
 typedef struct glyph_engine_s
 {
-	vkk_engine_t* engine;
+	vkk_engine_t*           engine;
+	vkk_vgContext_t*        vg_context;
+	vkk_vgPolygonBuilder_t* vg_polygon_builder;
 
-	double escape_t0;
+	vkk_vgPolygon_t* default_glyph;
 
+	double   escape_t0;
 	uint32_t content_rect_top;
 	uint32_t content_rect_left;
 	uint32_t content_rect_width;
