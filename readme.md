@@ -41,6 +41,11 @@ Use the
 [font-outline](https://github.com/jeffboody/a3d-fonts/tree/master/font-outline)
 program to convert TTF fonts to the glyph description.
 
+Screenshot
+==========
+
+![Glyph](resource/glyph-naive.jpg?raw=true "Glyph")
+
 License
 =======
 
