@@ -3,7 +3,7 @@ export VKK_USE_UI  = 1
 export VKK_USE_VG  = 1
 
 TARGET  = glyph
-CLASSES = glyph_engine
+CLASSES = glyph_engine glyph_object
 SOURCE  = $(TARGET).c $(CLASSES:%=%.c)
 OBJECTS = $(TARGET).o $(CLASSES:%=%.o)
 HFILES  = $(CLASSES:%=%.h)

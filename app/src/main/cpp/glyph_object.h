@@ -21,35 +21,37 @@
  *
  */
 
-#ifndef glyph_engine_H
-#define glyph_engine_H
+#ifndef glyph_object_H
+#define glyph_object_H
 
-#include "libcc/cc_map.h"
-#include "libvkk/vkk.h"
+#include "jsmn/wrapper/jsmn_wrapper.h"
+#include "libcc/math/cc_vec2f.h"
 #include "libvkk/vkk_vg.h"
 
-typedef struct glyph_engine_s
+typedef struct glyph_object_s
 {
-	vkk_engine_t*           engine;
-	vkk_vgContext_t*        vg_context;
-	vkk_vgPolygonBuilder_t* vg_polygon_builder;
+	int   i;
+	float w;
+	float h;
 
-	int              glyph_i;
-	vkk_vgPolygon_t* default_poly;
-	cc_map_t*        map_glyph;
+	// points
+	int         np;
+	cc_vec2f_t* p;
 
-	double   escape_t0;
-	uint32_t content_rect_top;
-	uint32_t content_rect_left;
-	uint32_t content_rect_width;
-	uint32_t content_rect_height;
-} glyph_engine_t;
+	// tags
+	int* t;
 
-glyph_engine_t* glyph_engine_new(vkk_engine_t* engine);
-void            glyph_engine_delete(glyph_engine_t** _self);
-void            glyph_engine_pause(glyph_engine_t* self);
-void            glyph_engine_draw(glyph_engine_t* self);
-void            glyph_engine_event(glyph_engine_t* self,
-                                   vkk_platformEvent_t* event);
+	// contours
+	int  nc;
+	int* c;
+
+	// build glyph on demand
+	vkk_vgPolygon_t* poly;
+} glyph_object_t;
+
+glyph_object_t*  glyph_object_new(jsmn_object_t* obj);
+void             glyph_object_delete(glyph_object_t** _self);
+vkk_vgPolygon_t* glyph_object_build(glyph_object_t* self,
+                                    vkk_vgPolygonBuilder_t* pb);
 
 #endif
