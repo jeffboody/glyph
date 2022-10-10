@@ -207,7 +207,9 @@ glyph_engine_t* glyph_engine_new(vkk_engine_t* engine)
 		return NULL;
 	}
 
-	self->engine = engine;
+	self->engine      = engine;
+	self->glyph_i     = 'g';
+	self->glyph_steps = 4;
 
 	if(bfs_util_initialize() == 0)
 	{
@@ -361,12 +363,14 @@ void glyph_engine_draw(glyph_engine_t* self)
 
 		vkk_vgPolygon_t* tmp;
 		tmp = glyph_object_build(glyph,
-		                         self->vg_polygon_builder);
+		                         self->vg_polygon_builder,
+		                         self->glyph_steps);
 		if(tmp)
 		{
 			poly = tmp;
 			b    = glyph->h;
-			r    = glyph->w;
+			l    = -(glyph->h - glyph->w)/2.0f;
+			r    = l + glyph->h;
 		}
 	}
 
@@ -412,6 +416,15 @@ void glyph_engine_event(glyph_engine_t* self,
 			}
 
 			self->escape_t0 = t1;
+		}
+		else if((event->key.keycode >= '0') &&
+		        (event->key.keycode <= '9'))
+		{
+			self->glyph_steps = event->key.keycode - '0';
+			if(self->glyph_steps == 9)
+			{
+				self->glyph_steps = 16;
+			}
 		}
 		else if((event->key.keycode >= 32) &&
 		        (event->key.keycode <= 126))
