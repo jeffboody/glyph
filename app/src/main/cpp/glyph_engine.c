@@ -135,7 +135,7 @@ glyph_engine_loadGlyphs(glyph_engine_t* self)
 	size_t size = 0;
 	char*  str  = NULL;
 	if(bfs_file_blobGet(bfs, 0,
-	                    "BarlowSemiCondensed-Regular-64.json",
+	                    "BarlowSemiCondensed-Regular-1000.json",
 	                    &size, (void**) &str) == 0)
 	{
 		goto fail_bfs;
