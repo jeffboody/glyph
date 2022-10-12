@@ -44,7 +44,7 @@ program to convert TTF fonts to the glyph description.
 Screenshot
 ==========
 
-![Glyph](resource/glyph-bezier-interpolation.jpg?raw=true "Glyph")
+![Glyph](resource/glyph-bezier-interpolation-4x.jpg?raw=true "Glyph")
 
 License
 =======
