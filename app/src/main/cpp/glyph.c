@@ -78,7 +78,7 @@ vkk_platformInfo_t VKK_PLATFORM_INFO =
 	{
 		.major = 1,
 		.minor = 0,
-		.patch = 1,
+		.patch = 2,
 	},
 	.app_dir   = "Glyph",
 	.onCreate  = glyph_onCreate,
