@@ -49,12 +49,14 @@ typedef struct glyph_object_s
 	vkk_vgPolygon_t* poly;
 
 	int last_steps;
+	int last_thresh;
 } glyph_object_t;
 
 glyph_object_t*  glyph_object_new(jsmn_object_t* obj);
 void             glyph_object_delete(glyph_object_t** _self);
 vkk_vgPolygon_t* glyph_object_build(glyph_object_t* self,
                                     vkk_vgPolygonBuilder_t* pb,
-                                    int steps);
+                                    int steps,
+                                    int thresh);
 
 #endif

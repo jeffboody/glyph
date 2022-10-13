@@ -367,7 +367,9 @@ void glyph_object_delete(glyph_object_t** _self)
 static int
 glyph_object_interpolate(glyph_object_t* self,
                          vkk_vgPolygonBuilder_t* pb,
-                         int* _first, int steps,
+                         int* _first,
+                         int steps, int thresh,
+                         float* _err, int* _cnt,
                          cc_vec2f_t* p0,
                          cc_vec2f_t* p1,
                          cc_vec2f_t* p2)
@@ -375,12 +377,132 @@ glyph_object_interpolate(glyph_object_t* self,
 	ASSERT(self);
 	ASSERT(pb);
 	ASSERT(_first);
+	ASSERT(_err);
+	ASSERT(_cnt);
 	ASSERT(p0);
 	ASSERT(p2);
 	ASSERT(p2);
 
-	int i;
+	// optionally compute adaptive subdivision steps
+	int   i;
 	float t;
+	if(thresh > 0)
+	{
+		// compute points and measure distance
+		cc_vec2f_t pts[17];
+		float      dist = 0.0f;
+		for(i = 0; i <= 16; ++i)
+		{
+			t = ((float) i)/((float) 16);
+			cc_vec2f_quadraticBezier(p0, p1, p2, t, &pts[i]);
+
+			if(i > 0)
+			{
+				cc_vec2f_t delta;
+				cc_vec2f_subv_copy(&pts[i], &pts[i - 1], &delta);
+				dist += cc_vec2f_mag(&delta);
+			}
+		}
+
+		// compute error between each subdivision step
+		// e1:  0----------------16
+		// e2:  0--------8--------16
+		// e4:  0----4----8----C----16
+		// e8:  0--2--4--6--8--A--C--E--16
+		float e1  = cc_vec2f_triangleArea(&pts[ 0], &pts[ 1], &pts[ 2]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 2], &pts[ 3]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 3], &pts[ 4]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 4], &pts[ 5]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 5], &pts[ 6]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 6], &pts[ 7]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 7], &pts[ 8]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 8], &pts[ 9]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[ 9], &pts[10]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[10], &pts[11]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[11], &pts[12]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[12], &pts[13]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[13], &pts[14]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[14], &pts[15]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[15], &pts[16]);
+		float e2  = cc_vec2f_triangleArea(&pts[ 0], &pts[ 1], &pts[ 2]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 2], &pts[ 3]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 3], &pts[ 4]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 4], &pts[ 5]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 5], &pts[ 6]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 6], &pts[ 7]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 7], &pts[ 8]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[ 9], &pts[10]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[10], &pts[11]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[11], &pts[12]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[12], &pts[13]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[13], &pts[14]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[14], &pts[15]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[15], &pts[16]);
+		float e4  = cc_vec2f_triangleArea(&pts[ 0], &pts[ 1], &pts[ 2]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 2], &pts[ 3]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 3], &pts[ 4]) +
+		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 4], &pts[ 5]) +
+		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 5], &pts[ 6]) +
+		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 6], &pts[ 7]) +
+		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 7], &pts[ 8]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[ 9], &pts[10]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[10], &pts[11]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[11], &pts[12]) +
+		            cc_vec2f_triangleArea(&pts[12], &pts[13], &pts[14]) +
+		            cc_vec2f_triangleArea(&pts[12], &pts[14], &pts[15]) +
+		            cc_vec2f_triangleArea(&pts[12], &pts[15], &pts[16]);
+		float e8  = cc_vec2f_triangleArea(&pts[ 0], &pts[ 1], &pts[ 2]) +
+		            cc_vec2f_triangleArea(&pts[ 2], &pts[ 3], &pts[ 4]) +
+		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 5], &pts[ 6]) +
+		            cc_vec2f_triangleArea(&pts[ 6], &pts[ 7], &pts[ 8]) +
+		            cc_vec2f_triangleArea(&pts[ 8], &pts[ 9], &pts[10]) +
+		            cc_vec2f_triangleArea(&pts[10], &pts[11], &pts[12]) +
+		            cc_vec2f_triangleArea(&pts[12], &pts[13], &pts[14]) +
+		            cc_vec2f_triangleArea(&pts[14], &pts[15], &pts[16]);
+
+		// scale error by 1/dist
+		e1 /= dist;
+		e2 /= dist;
+		e4 /= dist;
+		e8 /= dist;
+
+		// threshold steps
+		float err     = 0.0f;
+		float threshf = ((float) thresh)/10.0f;
+		if(e1 < threshf)
+		{
+			steps  = 1;
+			err    = e1;
+			*_err += e1;
+		}
+		else if(e2 < threshf)
+		{
+			steps  = 2;
+			err    = e2;
+			*_err += e2;
+		}
+		else if(e4 < threshf)
+		{
+			steps  = 4;
+			err    = e4;
+			*_err += e4;
+		}
+		else if(e8 < threshf)
+		{
+			steps  = 8;
+			err    = e8;
+			*_err += e8;
+		}
+		else
+		{
+			steps = 16;
+		}
+
+		LOGI("steps=%i, dist=%f, err=%f, e: %f, %f, %f, %f",
+		     steps, dist, err, e1, e2, e4, e8);
+	}
+
+	// perform subdivision
 	cc_vec2f_t p;
 	for(i = 1; i <= steps; ++i)
 	{
@@ -393,6 +515,7 @@ glyph_object_interpolate(glyph_object_t* self,
 			return 0;
 		}
 
+		*_cnt  += 1;
 		*_first = 0;
 	}
 
@@ -402,7 +525,8 @@ glyph_object_interpolate(glyph_object_t* self,
 vkk_vgPolygon_t*
 glyph_object_build(glyph_object_t* self,
                    vkk_vgPolygonBuilder_t* pb,
-                   int steps)
+                   int steps,
+                   int thresh)
 {
 	ASSERT(self);
 	ASSERT(pb);
@@ -410,7 +534,8 @@ glyph_object_build(glyph_object_t* self,
 	// check for cached polygon
 	if(self->poly)
 	{
-		if(self->last_steps == steps)
+		if((self->last_steps  == steps) &&
+		   (self->last_thresh == thresh))
 		{
 			return self->poly;
 		}
@@ -430,7 +555,8 @@ glyph_object_build(glyph_object_t* self,
 	vkk_vgPolygonBuilder_reset(pb);
 
 	// check algorithm
-	if(steps == 0)
+	int cnt = 0;
+	if((steps == 0) && (thresh == 0))
 	{
 		// naive algorithm
 		int p;
@@ -454,6 +580,7 @@ glyph_object_build(glyph_object_t* self,
 					return NULL;
 				}
 
+				cnt  += 1;
 				first = 0;
 			}
 
@@ -464,6 +591,8 @@ glyph_object_build(glyph_object_t* self,
 				++c;
 			}
 		}
+
+		LOGI("NAIVE(%c): cnt=%i", (char) self->i, cnt);
 	}
 	else
 	{
@@ -506,6 +635,7 @@ glyph_object_build(glyph_object_t* self,
 		cc_vec2f_t* pp2;
 		cc_vec2f_t  ppi;
 		cc_vec2f_t  ppj;
+		float       err = 0.0f;
 		for(c = 0; c < self->nc; ++c)
 		{
 			first = 1;
@@ -541,7 +671,8 @@ glyph_object_build(glyph_object_t* self,
 					ppj.y = pp1->y + (pp2->y - pp1->y)/2.0f;
 
 					// interpolate contour between pi and pj
-					if(glyph_object_interpolate(self, pb, &first, steps,
+					if(glyph_object_interpolate(self, pb, &first,
+					                            steps, thresh, &err, &cnt,
 					                            &ppi, pp1, &ppj) == 0)
 					{
 						return NULL;
@@ -554,7 +685,8 @@ glyph_object_build(glyph_object_t* self,
 					ppi.y = pp0->y + (pp1->y - pp0->y)/2.0f;
 
 					// interpolate contour between pi and p2
-					if(glyph_object_interpolate(self, pb, &first, steps,
+					if(glyph_object_interpolate(self, pb, &first,
+					                            steps, thresh, &err, &cnt,
 					                            &ppi, pp1, pp2) == 0)
 					{
 						return NULL;
@@ -571,7 +703,8 @@ glyph_object_build(glyph_object_t* self,
 					ppj.y = pp1->y + (pp2->y - pp1->y)/2.0f;
 
 					// interpolate contour between p0 and pj
-					if(glyph_object_interpolate(self, pb, &first, steps,
+					if(glyph_object_interpolate(self, pb, &first,
+					                            steps, thresh, &err, &cnt,
 					                            pp0, pp1, &ppj) == 0)
 					{
 						return NULL;
@@ -580,7 +713,8 @@ glyph_object_build(glyph_object_t* self,
 				else if(t0 && (t1 == 0) && t2)
 				{
 					// interpolate contour between p0 and p2
-					if(glyph_object_interpolate(self, pb, &first, steps,
+					if(glyph_object_interpolate(self, pb, &first,
+					                            steps, thresh, &err, &cnt,
 					                            pp0, pp1, pp2) == 0)
 					{
 						return NULL;
@@ -595,17 +729,30 @@ glyph_object_build(glyph_object_t* self,
 						return NULL;
 					}
 
+					cnt  += 1;
 					first = 0;
 				}
 			}
 
 			start = end + 1;
 		}
+
+		if(err == 0.0f)
+		{
+			LOGI("FIXED(%c): cnt=%i, steps=%i",
+			     (char) self->i, cnt, steps);
+		}
+		else
+		{
+			LOGI("ADAPTIVE(%c), cnt=%i, thresh=%i, err=%f",
+			     (char) self->i, cnt, thresh, err);
+		}
 	}
 
 	self->poly = vkk_vgPolygonBuilder_build(pb);
 
-	self->last_steps = steps;
+	self->last_steps  = steps;
+	self->last_thresh = thresh;
 
 	return self->poly;
 }

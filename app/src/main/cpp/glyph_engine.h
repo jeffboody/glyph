@@ -36,6 +36,7 @@ typedef struct glyph_engine_s
 
 	int              glyph_i;
 	int              glyph_steps;
+	int              glyph_thresh;
 	vkk_vgPolygon_t* default_poly;
 	cc_map_t*        map_glyph;
 
