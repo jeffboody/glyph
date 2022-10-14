@@ -10,35 +10,46 @@ research. My proposed algorithm is called the Adaptive
 Subdivision Algorithm (ASA) which I will be comparing
 against a Fixed Subdivision Algorithm (FSA).
 
+ATTENTION: A bug was discovered in calculating the error
+function which resulted has invalidated some of the results
+presented below. In particular, it appears that the error
+threshold can be increased while maintaining the same
+visual quality of glyphs while using fewer points. See the
+commit which includes this comment for more details.
+
 Fixed Subdivision Algorithm
 ===========================
 
-The FSA is simply a rasterization approach which subdivides
-Bezier curve segments using N steps to achieve the 'best'
-results. All other aspects of FSA such as tesselation and
-anti-aliasing are identical to ASA as described below.
+The FSA is simply subdivides Bezier curve segments using N
+subdivision steps to achieve the 'best' results. All
+other aspects of FSA such as tesselation and anti-aliasing
+are identical to ASA as described below.
 
 Adaptive Subdivision Algorithm
 ==============================
 
-Interpolation
--------------
+The ASA also subdivides Bezier curve segments however it
+uses a precise error function to minimize the number of
+subdivision steps required to subdivide Bezier curve
+segments for a given error threshold.
 
-The ASA uses a simple rasterization approach which
-subdivides Bezier curves while using a precise error
-function to determine when a subdivision is required. The
-subdivision is performed by interpolating the quadratic
-Bezier curve function.
+Subdivision
+-----------
+
+The subdivision is performed by interpolating the quadratic
+Bezier curve function between two points on a curve (P0, P2)
+and their corresponding control point (P1).
 
 	B(t) = P1 + (1 - t)^2(P0 - P1) + t^2(P2 - P1), 0 <= t <= 1
 
 The error resulting from interpolating the Bezier curve
-is dependent on the number of steps, the curvature and
-the length of the curve segment. The following diagram
-shows various interpolations of a Bezier curve using
-1 (A,E), 2 (A,C,E) and 4 (A,B,C,D,E) steps.
+is dependent on the number of subdivision steps, the
+curvature and the length of the curve segment. The
+following diagram shows various subdivisions of a Bezier
+curve using 1 (A,E), 2 (A,C,E) and 4 (A,B,C,D,E)
+subdivision steps.
 
-![Interpolation](resource/adaptive-subdivision-interpolation.jpg?raw=true "Interpolation")
+![Subdivision](resource/adaptive-subdivision-interpolation.jpg?raw=true "Subdivision")
 
 The absolute error can be approximated as the area of the
 curve between the i-step solution and the best N-step
@@ -70,31 +81,72 @@ average error.
 	Eavg(X) = Eabs(X)/Length(A,B,C,D,E)
 
 I use an error threshold to determine the number of
-interpolation steps to be performed for each Bezier
-curve segment. The following plot shows how the number of
-curve points and the error varies as the threshold changes
-for the 'g' character. As you would expect, both the number
-of points decreases and the error increases as the error
+subdivision steps to be performed for each Bezier curve
+segment. The following plot shows how the number of curve
+points and the error varies as the threshold changes for
+the 'g' character. As you would expect, both the number of
+points decreases and the error increases as the error
 threshold increases.
 
 ![Points and Error vs Threshold](resource/adaptive-subdivision-plot.jpg?raw=true "Points and Error vs Threshold")
 
+Contour Decomposition
+---------------------
+
+A glyph is defined by a set of points, tags and contours.
+Points are simply the (x,y) coordinate, tags are a
+per-point attribute which specifies if the point is ON/OFF
+the curve and contours define the range of points for each
+closed contour. The OFF points are the Bezier control
+points which are also known as conic points. Multiple
+contours may be required to describe points with multiple
+parts (j) and those which include holes (g).
+
+Process the points/tags defined by each contour separately.
+
+For each point/tag in the contour, form a tag triplet which
+is defined by the points/tags surrounding the current point
+(p1).
+
+	(t0, t1, t2)
+
+The prev (p0, t0) and next (p2, t2) point/tag values wrap
+around at the start/end of the contour so that the contour
+forms a complete loop. In the event where two OFF points
+occur in a row you should create a virtual point between.
+The virtual point pi is the midpoint of p0 and p1 while the
+virtual point pj is the midpoint of p1 and p2. The following
+state machine describes how to process each tag triplet in
+the contour. Notice that the subdivision/interpolation
+ranges do not include the first point but do include the
+last point.
+
+	000 - interpolate (pi,pj]
+	001 - interpolate (pi,p2]
+	01X - skip
+	100 - interpolate (p0,pj]
+	101 - interpolate (p0,p2]
+	11X - straight line [p2]
+
+See the Glyph Description below for more details regarding
+the glyph format and TTF decomposition rules.
+
 Tesselation
 -----------
 
-The output of the rasterization step is a sequence of points
-on the curves/contours which can be fed into a tesselator
-library. My VKK library includes a vector graphics module to
-generate polygons (e.g. indexed triangles) using these
-sequences of points. The underlying implementation uses the
-libtess2 library.
+The output of the contour decomposition and subdivision
+stages is a sequence of points on the curves/contours which
+can be fed into a tesselator library. My VKK library
+includes a vector graphics module to generate polygons
+(e.g. indexed triangles) using these sequences of points.
+The underlying implementation uses the libtess2 library.
 
 Here are some sample results which show the output of the
 tesselator for various scenarios.
 
 ![Wireframe Tesselation](resource/adaptive-subdivision-wireframe.jpg?raw=true "Wireframe Tesselation")
 
-1. Top-Left: FSA using 16 steps (517 points)
+1. Top-Left: FSA using 16 subdivision steps (517 points)
 2. Top-Right: ASA using thresh of 3 (145 points)
 3. Bottom-Left: ASA using thresh of 6 (92 points)
 4. Bottom-Right: ASA using thresh of 11 (80 points)
@@ -109,7 +161,7 @@ Anti-aliasing
 The algorithms that I researched reduce the number of points
 required by using shaders to evaluate the Bezier curve
 functions directly. This however, causes a problem in that
-the anti-aliasing step becomes much more difficult and
+the anti-aliasing stage becomes much more difficult and
 requires advanced anti-aliasing techniques such as:
 
 1. Shader based anti-aliasing with extended geometry
@@ -131,8 +183,8 @@ rendering with various settings.
 
 ![ASA Comparision](resource/adaptive-subdivision-comparision.jpg?raw=true "ASA Comparision")
 
-1. Top-Left: Non-MSAA FSA using 16 steps (517 points)
-1. Top-Right: 4x MSAA FSA using 16 steps (517 points)
+1. Top-Left: Non-MSAA FSA using 16 subdivision steps (517 points)
+1. Top-Right: 4x MSAA FSA using 16 subdivision steps (517 points)
 3. Bottom-Left: 4x MSAA ASA using thresh of 3 (145 points)
 4. Bottom-Right: 4x MSAA ASA using thresh of 6 (92 points)
 
@@ -170,7 +222,9 @@ by TTF fonts and are not supported by Glyph.
 
 Use the
 [font-outline](https://github.com/jeffboody/a3d-fonts/tree/master/font-outline)
-program to convert TTF fonts to the glyph description.
+program to convert
+[TTF](https://freetype.org/freetype2/docs/glyphs/glyphs-6.html)
+fonts to the glyph description.
 
 Hotkeys
 =======

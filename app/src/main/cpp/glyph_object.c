@@ -417,13 +417,13 @@ glyph_object_interpolate(glyph_object_t* self,
 		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 6], &pts[ 7]) +
 		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 7], &pts[ 8]) +
 		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 8], &pts[ 9]) +
-		            cc_vec2f_triangleArea(&pts[ 8], &pts[ 9], &pts[10]) +
-		            cc_vec2f_triangleArea(&pts[ 8], &pts[10], &pts[11]) +
-		            cc_vec2f_triangleArea(&pts[ 8], &pts[11], &pts[12]) +
-		            cc_vec2f_triangleArea(&pts[ 8], &pts[12], &pts[13]) +
-		            cc_vec2f_triangleArea(&pts[ 8], &pts[13], &pts[14]) +
-		            cc_vec2f_triangleArea(&pts[ 8], &pts[14], &pts[15]) +
-		            cc_vec2f_triangleArea(&pts[ 8], &pts[15], &pts[16]);
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 9], &pts[10]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[10], &pts[11]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[11], &pts[12]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[12], &pts[13]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[13], &pts[14]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[14], &pts[15]) +
+		            cc_vec2f_triangleArea(&pts[ 0], &pts[15], &pts[16]);
 		float e2  = cc_vec2f_triangleArea(&pts[ 0], &pts[ 1], &pts[ 2]) +
 		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 2], &pts[ 3]) +
 		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 3], &pts[ 4]) +
@@ -441,7 +441,6 @@ glyph_object_interpolate(glyph_object_t* self,
 		float e4  = cc_vec2f_triangleArea(&pts[ 0], &pts[ 1], &pts[ 2]) +
 		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 2], &pts[ 3]) +
 		            cc_vec2f_triangleArea(&pts[ 0], &pts[ 3], &pts[ 4]) +
-		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 4], &pts[ 5]) +
 		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 5], &pts[ 6]) +
 		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 6], &pts[ 7]) +
 		            cc_vec2f_triangleArea(&pts[ 4], &pts[ 7], &pts[ 8]) +
@@ -657,7 +656,7 @@ glyph_object_build(glyph_object_t* self,
 				// 000 - interpolate (pi,pj]
 				// 001 - interpolate (pi,p2]
 				// 01X - skip
-				// 100 - interpolate (p0,pi]
+				// 100 - interpolate (p0,pj]
 				// 101 - interpolate (p0,p2]
 				// 11X - straight line [p2]
 				if((t0 == 0) && (t1 == 0) && (t2 == 0))
