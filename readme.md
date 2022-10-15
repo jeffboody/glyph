@@ -10,13 +10,6 @@ research. My proposed algorithm is called the Adaptive
 Subdivision Algorithm (ASA) which I will be comparing
 against a Fixed Subdivision Algorithm (FSA).
 
-ATTENTION: A bug was discovered in calculating the error
-function which resulted has invalidated some of the results
-presented below. In particular, it appears that the error
-threshold can be increased while maintaining the same
-visual quality of glyphs while using fewer points. See the
-commit which includes this comment for more details.
-
 Fixed Subdivision Algorithm
 ===========================
 
@@ -147,13 +140,19 @@ tesselator for various scenarios.
 ![Wireframe Tesselation](resource/adaptive-subdivision-wireframe.jpg?raw=true "Wireframe Tesselation")
 
 1. Top-Left: FSA using 16 subdivision steps (517 points)
-2. Top-Right: ASA using thresh of 3 (145 points)
-3. Bottom-Left: ASA using thresh of 6 (92 points)
-4. Bottom-Right: ASA using thresh of 11 (80 points)
+2. Top-Right: FSA using 3 subdivision steps (101 points)
+3. Bottom-Left: ASA using thresh of 3 (152 points)
+4. Bottom-Right: ASA using thresh of 13 (80 points)
 
-Minor visual artifacts could be detected with a threshold
-between (3,6) and more severe artifacts were observed as
-the threshold increased.
+Prior to contour decompositon the 'g' glyph contained 59
+points (including contour points). The number of points
+required varies depending on the character but seems like
+'s' and 'g' were the most complex requiring roughtly twice
+as many points as the simple characters.
+
+Minor visual artifacts for ASA could be detected with a
+threshold between (3,13) and more severe artifacts were
+observed as the threshold increased.
 
 Anti-aliasing
 -------------
@@ -168,12 +167,14 @@ requires advanced anti-aliasing techniques such as:
 2. Smoothing by rendering multiple times then accumulating
    results using blending or color buffer accumulation
 
-Since ASA uses fully defined geometry up to a user defined
-error threshold it can take advantage of hardware MSAA
-support to perform anti-aliasing. I believe that ASA may
-use between 2-4 times as many points to achieve equivalent
-rendering quality for typical use cases where infinite
-scaling of text is not required.
+Unlike the shader based aproaches, ASA uses fully defined
+geometry (up to a user defined error threshold) so it can
+take advantage of built-in hardware MSAA to perform
+anti-aliasing.
+
+Another consideration for anti-aliasing is that modern
+devices have very high screen density and I'm not convinced
+that anti-aliasing will provide a significant benefit.
 
 Results
 -------
@@ -185,8 +186,14 @@ rendering with various settings.
 
 1. Top-Left: Non-MSAA FSA using 16 subdivision steps (517 points)
 1. Top-Right: 4x MSAA FSA using 16 subdivision steps (517 points)
-3. Bottom-Left: 4x MSAA ASA using thresh of 3 (145 points)
-4. Bottom-Right: 4x MSAA ASA using thresh of 6 (92 points)
+3. Bottom-Left: 4x MSAA ASA using thresh of 3 (152 points)
+4. Bottom-Right: 4x MSAA ASA using thresh of 13 (80 points)
+
+I believe that ASA can achieve nearly equivalent rendering
+quality for typical use cases where infinite scaling is not
+required. The ASA can achieve these results using 1.5x to
+3.0x as many points while greatly reducing implementation
+complexity.
 
 Glyph Description
 =================
