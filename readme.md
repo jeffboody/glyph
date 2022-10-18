@@ -266,6 +266,7 @@ References
 
 * [Easy Scalable Text Rendering on the GPU](https://medium.com/@evanwallace/easy-scalable-text-rendering-on-the-gpu-c3f4d782c5ac)
 * [Resolution Independent Curve Rendering using Programmable Graphics Hardware](https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf)
+* [Multi-channel signed distance field generator](https://github.com/Chlumsky/msdfgen)
 * [Signed Distance Estimation](https://github.com/kocsis1david/font-demo/blob/master/howitworks.md)
 * [Bezier Curves](https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves)
 * [Heron’s Formula](https://www.cuemath.com/measurement/area-of-triangle/)
