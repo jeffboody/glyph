@@ -57,8 +57,8 @@ glyph_engine_addGlyph(glyph_engine_t* self,
 		return 0;
 	}
 
-	if(cc_map_addf(self->map_glyph, glyph, "%i",
-	               glyph->i) == NULL)
+	if(cc_map_addf(self->map_glyph, glyph, "%s",
+	               glyph->name) == NULL)
 	{
 		goto fail_add;
 	}
@@ -135,7 +135,7 @@ glyph_engine_loadGlyphs(glyph_engine_t* self)
 	size_t size = 0;
 	char*  str  = NULL;
 	if(bfs_file_blobGet(bfs, 0,
-	                    "BarlowSemiCondensed-Regular-1000.json",
+	                    "BarlowSemiCondensed-Regular.json",
 	                    &size, (void**) &str) == 0)
 	{
 		goto fail_bfs;
@@ -355,7 +355,7 @@ void glyph_engine_draw(glyph_engine_t* self)
 	vkk_vgPolygon_t* poly = self->default_poly;
 
 	cc_mapIter_t* miter;
-	miter = cc_map_findf(self->map_glyph, "%i",
+	miter = cc_map_findf(self->map_glyph, "ascii-0x%X",
 	                     self->glyph_i);
 	if(miter)
 	{

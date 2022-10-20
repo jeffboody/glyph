@@ -203,24 +203,26 @@ based on TTF fonts where glyphs are represented by a set of
 points, contours and tags. Here is a very simple example
 JSON file which includes a single square glyph although
 multiple glyphs are allowed. The glyph data fields are the
-index (i), width (w), height (h), number of points (np),
+name (name), width (w), height (h), number of points (np),
 points (p), tags (t), number of contours (nc) and contours
-(c). The point origin is in the top-left corner. Tags are
-used to describe the type of curve point which can be an ON
-(1) point, a conic Bezier OFF (0) point or a cubic Bezier
-OFF (2) point. Cubic Bezier points are not typically used
-by TTF fonts and are not supported by Glyph.
+(c). The point origin is in the top-left corner. The height
+should be normalized to 1.0 to make the error threshold
+more uniform across glyphs. Tags are used to describe the
+type of curve point which can be an ON (1) point, a conic
+Bezier OFF (0) point or a cubic Bezier OFF (2) point. Cubic
+Bezier points are not typically used by TTF fonts and are
+not supported by Glyph.
 
 	[
 	  {
-	    "i"=0,
-	    "w"=10.0,
-	    "h"=10.0,
+	    "name"="square",
+	    "w"=1.0,
+	    "h"=1.0,
 	    "np"=4,
-	    "p"=[2.5,2.5,
-	         2.5,7.5,
-	         7.5,7.5,
-	         7.5,2.5],
+	    "p"=[0.25,0.25,
+	         0.25,0.75,
+	         0.75,0.75,
+	         0.75,0.25],
 	    "t"=[1,1,1,1],
 	    "nc"=1,
 	    "c"=[3]

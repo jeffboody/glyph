@@ -6,7 +6,7 @@ rm $RESOURCE
 echo RESOURCES
 cd resource
 bfs $RESOURCE blobSet readme.txt
-bfs $RESOURCE blobSet BarlowSemiCondensed-Regular-1000.json
+bfs $RESOURCE blobSet BarlowSemiCondensed-Regular.json
 cd ..
 
 echo VKK UI

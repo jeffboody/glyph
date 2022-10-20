@@ -21,6 +21,7 @@
  *
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -64,7 +65,7 @@ glyph_newPoints(int np, jsmn_array_t* array)
 			LOGE("invalid type=%i", val->type);
 			goto fail_val;
 		}
-		p[idx].x = (float) strtod(val->data, NULL);
+		p[idx].x = strtof(val->data, NULL);
 
 		iter = cc_list_next(iter);
 
@@ -74,7 +75,7 @@ glyph_newPoints(int np, jsmn_array_t* array)
 			LOGE("invalid type=%i", val->type);
 			goto fail_val;
 		}
-		p[idx].y = (float) strtod(val->data, NULL);
+		p[idx].y = strtof(val->data, NULL);
 
 		iter = cc_list_next(iter);
 		++idx;
@@ -200,7 +201,6 @@ glyph_object_new(jsmn_object_t* obj)
 	}
 
 	// initialize state
-	self->i  = -1;
 	self->w  = -1.0f;
 	self->h  = -1.0f;
 	self->np = -1;
@@ -212,16 +212,24 @@ glyph_object_new(jsmn_object_t* obj)
 		jsmn_keyval_t* kv;
 		kv = (jsmn_keyval_t*) cc_list_peekIter(iter);
 
-		if((strcmp(kv->key, "i") == 0) &&
-		   (kv->val->type == JSMN_TYPE_PRIMITIVE))
+		if((strcmp(kv->key, "name") == 0) &&
+		   (kv->val->type == JSMN_TYPE_STRING))
 		{
-			if(self->i != -1)
+			if(self->name != NULL)
 			{
 				LOGE("invalid %s", kv->val->data);
 				goto fail_glyph;
 			}
 
-			self->i = (int) strtol(kv->val->data, NULL, 0);
+			size_t len = strlen(kv->val->data) + 1;
+			self->name = CALLOC(len, sizeof(char));
+			if(self->name == NULL)
+			{
+				LOGE("CALLOC failed");
+				goto fail_glyph;
+			}
+
+			snprintf(self->name, len, "%s", kv->val->data);
 		}
 		else if((strcmp(kv->key, "w") == 0) &&
 		        (kv->val->type == JSMN_TYPE_PRIMITIVE))
@@ -320,17 +328,17 @@ glyph_object_new(jsmn_object_t* obj)
 	}
 
 	// validate data
-	if((self->i  < 0)     ||
-	   (self->w  < 0.0f)  ||
-	   (self->h  < 0.0f)  ||
-	   (self->np < 0)     ||
-	   (self->nc < 0)     ||
-	   (self->p  == NULL) ||
-	   (self->t  == NULL) ||
-	   (self->c  == NULL))
+	if((self->name == NULL) ||
+	   (self->w    <  0.0f) ||
+	   (self->h    <  0.0f) ||
+	   (self->np   <  0)    ||
+	   (self->nc   <  0)    ||
+	   (self->p    == NULL) ||
+	   (self->t    == NULL) ||
+	   (self->c    == NULL))
 	{
-		LOGE("invalid i=%i, w=%f, h=%f, np=%i, nc=%i, p=%p, t=%p, c=%p",
-		     self->i, self->w, self->h,
+		LOGE("invalid name=%s, w=%f, h=%f, np=%i, nc=%i, p=%p, t=%p, c=%p",
+		     self->name ? self->name : "NULL", self->w, self->h,
 		     self->np, self->nc,
 		     self->p, self->t, self->c);
 		goto fail_glyph;
@@ -344,6 +352,7 @@ glyph_object_new(jsmn_object_t* obj)
 		FREE(self->c);
 		FREE(self->t);
 		FREE(self->p);
+		FREE(self->name);
 		FREE(self);
 	return NULL;
 }
@@ -359,6 +368,7 @@ void glyph_object_delete(glyph_object_t** _self)
 		FREE(self->c);
 		FREE(self->t);
 		FREE(self->p);
+		FREE(self->name);
 		FREE(self);
 		*_self = NULL;
 	}
@@ -467,7 +477,7 @@ glyph_object_interpolate(glyph_object_t* self,
 
 		// threshold steps
 		float err     = 0.0f;
-		float threshf = ((float) thresh)/10.0f;
+		float threshf = ((float) thresh)/(10000.0f);
 		if(e1 < threshf)
 		{
 			steps  = 1;
@@ -591,7 +601,7 @@ glyph_object_build(glyph_object_t* self,
 			}
 		}
 
-		LOGI("NAIVE(%c): cnt=%i", (char) self->i, cnt);
+		LOGI("NAIVE(%s): cnt=%i", self->name, cnt);
 	}
 	else
 	{
@@ -738,13 +748,13 @@ glyph_object_build(glyph_object_t* self,
 
 		if(err == 0.0f)
 		{
-			LOGI("FIXED(%c): cnt=%i, steps=%i",
-			     (char) self->i, cnt, steps);
+			LOGI("FIXED(%s): cnt=%i, steps=%i",
+			     self->name, cnt, steps);
 		}
 		else
 		{
-			LOGI("ADAPTIVE(%c), cnt=%i, thresh=%i, err=%f",
-			     (char) self->i, cnt, thresh, err);
+			LOGI("ADAPTIVE(%s), cnt=%i, thresh=%i, err=%f",
+			     self->name, cnt, thresh, err);
 		}
 	}
 

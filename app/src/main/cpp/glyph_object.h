@@ -30,7 +30,8 @@
 
 typedef struct glyph_object_s
 {
-	int   i;
+	char* name;
+
 	float w;
 	float h;
 
